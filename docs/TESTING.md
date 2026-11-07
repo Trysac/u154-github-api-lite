@@ -1,20 +1,12 @@
-# Testing
+# Testing Strategy
 
-## Running
+## Test Implementation
 
-```sh
-uv run pytest --cov=github_api_lite   # tests with coverage report
-uv run python scripts/check.py      # every gate, as CI and the factory run it
-```
+Tests are located in `tests/test_github_api_lite.py`. They use a custom `FakeTransport` class to inject deterministic HTTP responses and mock the system clock/sleep functions. No network calls are made.
 
-## Policy
+## Coverage
 
-- Branch coverage of `src/github_api_lite` must stay at or above 80 %; the gate fails below it.
-- Tests exercise the public API (`import github_api_lite`) and assert every observable effect:
-  return values, raised exceptions and their messages.
-- Each bug fix starts with a failing test that reproduces it.
-- Tests are deterministic: no network, no wall clock, no dependence on test order.
-
-## Layout
-
-`tests/test_<module>.py` mirrors each public module. Shared fixtures go in `tests/conftest.py`.
+- **Pagination**: Validating next-page link extraction, `max_pages` limits, and `per_page` query arguments.
+- **Rate Limiting**: Verifying `403` and `429` retry logic based on `Retry-After` and `x-ratelimit-*` headers.
+- **Security**: Verifying `foreign_link` blocks for cross-origin URLs, ensuring tokens are masked in `repr()`, and checking input limits.
+- **Validation**: Testing path validation, JSON response types, and body size limits.

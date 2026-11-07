@@ -1,19 +1,17 @@
-# Security notes
+# Security Model
 
-## Threat model
+## Threat Model
 
-`trysac-github-api-lite` is a pure library without I/O. The main risks are:
+### Defended
 
-- **Supply chain**: a compromised dependency or CI action. Mitigation: no runtime dependencies,
-  Dependabot weekly updates, actions pinned to major versions, minimal workflow permissions.
-- **Leaked secrets**: tokens committed by mistake. Mitigation: `gitleaks` runs in the local gates
-  and in CI; `.env` files are git-ignored.
-- **Untrusted input**: callers may pass hostile strings. Mitigation: validate input and fail with
-  explicit exceptions; never `eval`, `exec` or deserialize untrusted data.
+1. **Credential Exposure**: Authorization tokens are never included in exception messages or `repr()` output. The client explicitly masks these as `'***'` in `__repr__`.
+2. **SSRF / Token Leakage**: Pagination follows `Link` headers only when the destination matches the base URL's scheme, host, and port. Requests to foreign domains are rejected with `foreign_link`.
+3. **Denial of Service**: The client enforces strict limits:
+   - `Link` headers > 8,192 bytes are rejected.
+   - Responses > 10,485,760 bytes are rejected (`response_too_large`).
+   - Wait time for rate limits is capped at 60 seconds.
 
-## Publishing
+### Not Defended
 
-Releases are published to PyPI with trusted publishing (OIDC) when available, never with a
-long-lived token stored in the repository.
-
-To report a vulnerability, see [SECURITY.md](../SECURITY.md).
+- **Transport Security**: TLS/SSL verification and network-level security are delegated entirely to the user-provided `Transport` implementation.
+- **Write Endpoint Vulnerabilities**: The client is limited to GET requests and does not address risks associated with mutating API methods.
