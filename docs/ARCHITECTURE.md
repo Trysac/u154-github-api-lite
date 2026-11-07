@@ -1,29 +1,23 @@
 # Architecture
 
-## Purpose
+## Overview
 
-`trysac-github-api-lite` is a small, dependency-free Python library: Minimal GitHub REST client over an injected transport: Link header pagination, primary and secondary rate limit handling and same-origin page links
+`github-api-lite` provides a zero-dependency client for GitHub's REST API designed for high testability and security.
 
-## Shape
+## Core Concepts
 
-```text
-caller code --> github_api_lite (public API in __init__.py)
-                    |
-                    +-- pure functions, no I/O, no global state
+### 1. Injected Transport Protocol
+The `GitHubClient` performs no network I/O. It consumes a `Transport` protocol:
+
+```python
+class Transport(Protocol):
+    def get(self, url: str, headers: Mapping[str, str]) -> Response: ...
 ```
 
-- **Public API**: the names listed in `__all__` of `src/github_api_lite/__init__.py`. Anything else is
-  internal and may change without a major version.
-- **Errors**: invalid input raises built-in exceptions (`ValueError`, `TypeError`) with a clear
-  message; the library never prints or exits.
-- **Side effects**: none. If a feature needs I/O, isolate it in its own module behind a small
-  interface and record the choice in an ADR.
+This decouples the library from specific HTTP stacks like `urllib`, `requests`, or `httpx`.
 
-## Quality contract
+### 2. RFC 8288 Link Header Pagination
+The `paginate()` method consumes `Link` headers, extracting `next` targets. To prevent token leakage, pagination traverses only to URLs matching the base URL's scheme, host, and port (verified by `_is_same_origin`).
 
-`scripts/check.py` is the single definition of the gates; `fabrica.json` tells the factory and CI
-how to run it. See [TESTING.md](TESTING.md).
-
-## Decisions
-
-Architecture decisions are recorded in [decisions/](decisions/) as numbered ADRs.
+### 3. Rate Limit Recovery
+The client handles `403` and `429` status codes by analyzing `Retry-After` or `x-ratelimit-reset` headers. If the calculated wait time is within `max_wait_s` (default 60s), the client blocks using the injected `sleep` callback before attempting a single retry. Exceeding this limit or failing on retry raises `RateLimitedError`.

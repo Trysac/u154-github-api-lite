@@ -9,4 +9,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Add github_api_lite with RFC 8288 Link header parsing, safe same-origin pagination, and rate limit retry handling.
 - Initial project structure from the factory utility template.
