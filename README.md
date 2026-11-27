@@ -6,8 +6,10 @@ A minimal, zero-dependency GitHub REST client over an injected transport featuri
 
 ## Installation
 
+Not published to PyPI yet. Install it from GitHub:
+
 ```bash
-pip install trysac-github-api-lite
+pip install "git+https://github.com/Trysac/u154-github-api-lite"
 ```
 
 ## Usage
